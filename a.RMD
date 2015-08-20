@@ -1,0 +1,139 @@
+---
+title: "Regression Models"
+date: "July 25, 2015"
+---
+
+
+The aim of the project is to explore the Motor Trend Car data set. Motor Trend Car data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973-74 models).
+
+
+#### Exploratoy Data Analysis
+
+Using the summary function, the range of values is explored for variables in the dataset. Also, a correlation chart and matrix is evaluated. From the correlation matrix (Figure 2), it is noticed that -
+
+a) MPG has a high negative correlation with cyl, disp, hp and wt
+
+b) MPG has a strong correlation with drat, qsec, vs and am
+
+
+```{r,eval=TRUE}
+summary(mtcars)
+head(mtcars, 10)
+
+```
+
+#### Comparing Automatic and Manual Transmission
+
+The two sample t-test is used to determine if Automatic or Manual Transmission is better for mpg.
+Under the null hypothesis, it is assumed that mean of mpg is same for both Automatic and Manual Transmission.
+
+From the t-test it is seen that Manual Transmissions have a higher mean mpg of 24.39 compared to Automatic Transmissions mean of 17.147. This is also visible in Figure 3 - the boxplot of mpg vs am.
+
+From the t-test, the p value is less than 0.001, therefore the Null Hypothesis is rejected. The mean of mpg for both Automatic and Manual Transmissions are different and from t-test it can be inferred that they come from two different populations.
+
+
+```{r, eval=TRUE}
+
+t.test(mtcars$mpg~mtcars$am)
+
+```
+
+#### Building regression Models
+
+A full regression model is built to predict mpg with all the other predictor variables. From the model - 
+
+a) The overall model has a high adjusted R-squared of 0.8066. The model can explain 80.6% of the variance in mpg.
+
+b) Keeping all other factors constant, it can be estimated that mpg increases by 2.5 when we move from automatic to manual transmissions. Thus it again proves the point that Automatic Transmissions are better.
+
+c) However, all the predictors do not seem to have a significant contribution in the model. It looks like certain variables can be removed from the model.
+
+A Step wise regression model is used for better selection of variables. The new model has:
+
+a) A better adjusted R-squared of 0.8336.
+
+b) It only uses three predictor variables - wt, qsec and am, and all are significant.
+
+c) From the model, it can be inferred, that mpg increases with increase in qsec and when transmission changes from automatic to manual. However, mpg decreases with increase in weight of car.
+ 
+Model 2 looks better.
+
+```{r,eval=TRUE,cache=TRUE}
+l1<-lm(mpg=~.,data=mtcars)
+summary(l1)
+l2<-step(l1)
+summary(l2)
+
+```
+#### Regression Diagnostics and Outlier Detection
+
+Cook's distance is found for all observations in the dataset. From the cook's distance value, "Chrysler Imperial" and "Merc 230" are highly influential. This is also shown in Figure 5. Therefore these two values are removed from the dataset and regression model is run again. An improvement is seen in the Adjusted R-squared which increases to 0.863. Other observations from figure 5 are
+
+1) Residual QQ plots show there is normality of the errors.
+
+2) Residuals vs Fitted plot show constant error variance and hence no problem of Heteroskedasticity.
+
+Also, from the Components+ Residual Plots in Figure 4, it can be observed that there is a linear trend for all predictor variables.
+
+
+```{r,eval=TRUE}
+m <-mtcars
+sort(cooks.distance(l2)[1:32],decreasing=TRUE)
+cooksd <- cooks.distance(l2)
+m<-cbind(m,cooksd)
+a1<-subset(m,m$cooksd>(0.1465))
+m<-m[!(m$disp%in% a1$disp),]
+l2<-lm(mpg~wt+am+qsec,data=m)
+summary(l2)
+
+```
+
+#### Conclusion
+
+In this project, we are able to make a good model which quantifies the relationship of  mpg with other variables. From the model. it is seen that -
+
+a) Manual Transmissions are better for mpg.
+
+b) Light cars are better for mpg.
+
+
+
+```{r, echo=FALSE}
+plot(mtcars)
+
+```
+Figure 1
+
+```{r, echo=FALSE}
+
+
+library(corrplot)
+corrplot(cor(mtcars), method = "number")
+#par(mfrow=c(2,2))
+#plot(l2)
+
+```
+ Figure 2
+
+```{r, echo=FALSE}
+library(ggplot2)
+p <- ggplot(mtcars, aes(factor(am), mpg))
+p + geom_boxplot(color="red")
+```
+ Figure 3
+
+```{r,echo=FALSE,results='hide',warning=FALSE,eval=TRUE}
+l1<-lm(mpg=~.,data=mtcars)
+l2<-step(l1)
+library(car)
+crPlots(l2)
+```
+Figure 4
+
+```{r,echo=FALSE,results='hide',warning=FALSE,eval=TRUE}
+l1<-lm(mpg=~.,data=mtcars)
+l2<-step(l1)
+par(mfrow=c(2,2))
+plot(l2)
+```
+Figure 5
